@@ -1,11 +1,11 @@
 import java.util.jar._
 
-crossScalaVersions in ThisBuild := Seq("2.8.1", "2.9.0-1", "2.9.1")
+crossScalaVersions in ThisBuild := Seq("2.9.1")
 
 // doing "in ThisBuild" makes this default setting for all projects in this build
 version in ThisBuild := "5.4"
 
-organization in ThisBuild := "com.gu"
+organization in ThisBuild := "gov.gds"
 
 publishArtifact := false
 
@@ -21,8 +21,8 @@ publishTo in ThisBuild <<= (version) { version: String =>
     val publishType = if (version.endsWith("SNAPSHOT")) "snapshots" else "releases"
     Some(
         Resolver.file(
-            "guardian github " + publishType,
-            file(System.getProperty("user.home") + "/guardian.github.com/maven/repo-" + publishType)
+            "alphagov github " + publishType,
+            file(System.getProperty("user.home") + "/alphagov.github.com/maven/" + publishType)
         )
     )
 }
