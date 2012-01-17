@@ -2,21 +2,30 @@ package com.gu.management
 
 import java.util.concurrent.atomic.AtomicLong
 import java.util.Date
-import java.util.concurrent.Callable
 
-abstract class Metric() extends Loggable {
+abstract class Metric() {
+  val group: String
+  val name: String
+
   def asJson: StatusMetric
 
-  def reset() {
-  }
+  def definition: Definition = Definition(group, name)
+
+  def reset() {}
 }
 
 object TimingMetric {
   val empty = new TimingMetric("application", "Empty", "Empty", "Empty")
 }
 
-case class CountMetric(group: String, name: String, title: String, description: String, master: String = "none") extends Metric {
+case class Definition(group: String, name: String)
+
+case class GaugeMetric(group: String, name: String, title: String, description: String, master: Option[Metric] = None) extends Metric {
   private val _count = new AtomicLong()
+
+  override def reset() {
+    _count.set(0)
+  }
 
   def recordCount(count: Int) {
     _count.addAndGet(count)
@@ -24,13 +33,37 @@ case class CountMetric(group: String, name: String, title: String, description: 
 
   def count = _count.get
 
+  def asJson = StatusMetric(
+    group = group,
+    master = master map {
+      _.definition
+    },
+    name = name,
+    `type` = "gauge",
+    title = title,
+    description = description,
+    value = Some(count.toString)
+  )
+}
+
+case class CountMetric(group: String, name: String, title: String, description: String, master: Option[Metric] = None) extends Metric {
+  private val _count = new AtomicLong()
+
+  def recordCount(count: Int) {
+    _count.addAndGet(count)
+  }
+
   override def reset() {
     _count.set(0)
   }
 
+  def count = _count.get
+
   def asJson = StatusMetric(
     group = group,
-    master = master,
+    master = master map {
+      _.definition
+    },
     name = name,
     `type` = "counter",
     title = title,
@@ -39,7 +72,7 @@ case class CountMetric(group: String, name: String, title: String, description: 
   )
 }
 
-case class TimingMetric(group: String, name: String, title: String, description: String, master: String = "none") extends Metric() {
+case class TimingMetric(group: String, name: String, title: String, description: String, master: Option[Metric] = None) extends Metric {
 
   private val _totalTimeInMillis = new AtomicLong()
   private val _count = new AtomicLong()
@@ -56,7 +89,9 @@ case class TimingMetric(group: String, name: String, title: String, description:
 
   def asJson = StatusMetric(
     group = group,
-    master = master,
+    master = master map {
+      _.definition
+    },
     name = name,
     `type` = "timer",
     title = title,
@@ -75,19 +110,10 @@ case class TimingMetric(group: String, name: String, title: String, description:
     recordTimeSpent(s.elapsed)
     result
   }
-
-  // for java developers, these are easier to call
-  def call[T](c: Callable[T]) = measure {
-    c.call
-  }
-
-  def run(r: Runnable) = measure {
-    r.run()
-  }
 }
 
 case class StatusMetric(group: String = "application",
-                        master: String = "none",
+                        master: Option[Definition] = None,
                         // name should be brief and underscored not camel case
                         name: String,
                         `type`: String,
