@@ -15,12 +15,19 @@ abstract class Metric() {
 }
 
 object TimingMetric {
-  val empty = new TimingMetric("application", "Empty", "Empty", "Empty")
+  val empty = new TimingMetric("application", "Empty", "Empty", "Empty", "Empty")
 }
 
-case class Definition(group: String, name: String)
+case class Definition(group: String,
+                      name: String)
 
-case class GaugeMetric(group: String, name: String, title: String, description: String, master: Option[Metric] = None) extends Metric {
+case class GaugeMetric(group: String,
+                       name: String,
+                       title: String,
+                       description: String,
+                       units: String = "level",
+                       master: Option[Metric] = None) extends Metric {
+
   private val _count = new AtomicLong()
 
   override def reset() {
@@ -46,7 +53,13 @@ case class GaugeMetric(group: String, name: String, title: String, description: 
   )
 }
 
-case class CountMetric(group: String, name: String, title: String, description: String, master: Option[Metric] = None) extends Metric {
+case class CountMetric(group: String,
+                       name: String,
+                       title: String,
+                       description: String,
+                       units: String = "requests",
+                       master: Option[Metric] = None) extends Metric {
+  
   private val _count = new AtomicLong()
 
   def recordCount(count: Int) {
@@ -72,7 +85,11 @@ case class CountMetric(group: String, name: String, title: String, description: 
   )
 }
 
-case class TimingMetric(group: String, name: String, title: String, description: String, master: Option[Metric] = None) extends Metric {
+case class TimingMetric(group: String, 
+                        name: String, title: String,
+                        description: String,
+                        units: String = "ms",
+                        master: Option[Metric] = None) extends Metric {
 
   private val _totalTimeInMillis = new AtomicLong()
   private val _count = new AtomicLong()
